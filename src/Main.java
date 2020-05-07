@@ -4,42 +4,112 @@ import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class Main {
-    public Main() {
+
+abstract class Algorithm {
+
+    Algorithm(String operationType, int key, String data, String outFileName){
+        switch (operationType) {
+            case "enc":
+                encrypt(key, data, outFileName);
+                break;
+            case "dec":
+                decrypt(key, data, outFileName);
+                break;
+        }
     }
 
-    public static String encrypt(String input, int key) {
+    abstract void encrypt(int key, String data, String outFileName);
+    abstract void decrypt(int key, String data, String outFileName);
+}
+
+class ShiftAlgorithm extends Algorithm {
+
+    ShiftAlgorithm(String operationType, int key, String data, String outFileName){
+        super(operationType, key, data, outFileName);
+    }
+
+    @Override
+    void encrypt(int key, String data, String outFileName) {
+        StringBuilder result = new StringBuilder();
+        for (char character : data.toCharArray()) {
+            if (character != ' ') {
+                int originalAlphabetPosition = character - 'a';
+                int newAlphabetPosition = (originalAlphabetPosition + key) % 26;
+                char newCharacter = (char) ('a' + newAlphabetPosition);
+                result.append(newCharacter);
+            } else {
+                result.append(character);
+            }
+        }
+        ProcessingData.output(result.toString(),outFileName);
+    }
+
+    @Override
+    void decrypt(int key, String data, String outFileName) {
+        encrypt(26 - (key % 26), data, outFileName);
+    }
+}
+
+class UnicodeAlgorithm extends Algorithm {
+
+    UnicodeAlgorithm(String operationType, int key, String data, String outFileName){
+        super(operationType, key, data, outFileName);
+    }
+
+    @Override
+    void encrypt(int key, String data, String outFileName) {
         String output = "";
 
-        for(int i = 0; i < input.length(); ++i) {
-            output = output + (char)(input.charAt(i) + key);
+        for(int i = 0; i < data.length(); ++i) {
+            output += (char)(data.charAt(i) + key);
         }
+        ProcessingData.output(output,outFileName);
 
-        return output;
     }
 
-    public static String decrypt(String input, int key) {
+    @Override
+    void decrypt(int key, String data, String outFileName) {
         String output = "";
 
-        for(int i = 0; i < input.length(); ++i) {
-            output = output + (char)(input.charAt(i) - key);
+        for(int i = 0; i < data.length(); ++i) {
+            output += (char)(data.charAt(i) - key);
         }
 
-        return output;
+        ProcessingData.output(output,outFileName);
     }
+}
 
-    public static String selectMode(String mode, String data, int key) {
-        if (mode.equals("enc")) {
-            return encrypt(data, key);
-        } else if (mode.equals("dec")) {
-            return decrypt(data, key);
-        } else {
+
+class AlgorithmFactory {
+
+    public  static void startProgram(String algoType, String operationType, int key, String data, String outFileName){
+
+        if (!operationType.equals("enc") && !operationType.equals("dec")) {
             System.out.println("Unknown operation.");
-            return "";
+        } else {
+            switch (algoType) {
+                case "shift":
+                    new ShiftAlgorithm(operationType, key, data, outFileName);
+                    break;
+                case "unicode":
+                    new UnicodeAlgorithm(operationType, key, data, outFileName);
+                    break;
+            }
+        }
+    }
+}
+
+class ProcessingData {
+
+    public static void output(String data, String outputPath){
+        if(outputPath.equals("")){
+            System.out.println(data);
+        } else {
+            ProcessingData.write(data,outputPath);
         }
     }
 
-    public static String dataIN(String readingPath) {
+    public static String read(String readingPath) {
         String content = "";
 
         try {
@@ -75,45 +145,39 @@ public class Main {
         }
 
     }
+}
 
-    public static void start(String[] args) {
-        String mode = "enc";
+
+public class Main {
+
+    public static void main(String[] args){
+        String alg = "shift";
+        String mod = "enc";
         int key = 0;
         String data = "";
         String inFileName = "";
         String outFileName = "";
 
         for(int i = 0; i < args.length; ++i) {
-            if (args[i].equals("-mode")) {
-                mode = args[i + 1];
+            if (args[i].equals("-alg")){
+                alg = args[i + 1];
+            }else if (args[i].equals("-mode")) {
+                mod = args[i + 1];
             } else if (args[i].equals("-key")) {
                 key = Integer.parseInt(args[i + 1]);
             } else if (args[i].equals("-data")) {
                 data = args[i + 1];
             } else if (args[i].equals("-in")) {
-                System.out.println(args[i + 1]);
                 inFileName = "C:\\Users\\hekod\\Desktop\\INTELLIJ-TEST\\" + args[i + 1];
             } else if (args[i].equals("-out")) {
-                System.out.println(args[i + 1]);
                 outFileName = "C:\\Users\\hekod\\Desktop\\INTELLIJ-TEST\\" + args[i + 1];
             }
         }
 
-        if (outFileName.equals("")) {
-            if (data.equals("") && !inFileName.equals("")) {
-                System.out.println(selectMode(mode, dataIN(inFileName), key));
-            } else {
-                System.out.println(selectMode(mode, data, key));
-            }
-        } else if (data.equals("") && !inFileName.equals("")) {
-            write(selectMode(mode, dataIN(inFileName), key), outFileName);
-        } else {
-            write(selectMode(mode, data, key), outFileName);
+        if (data.equals("") && !inFileName.equals("")) {
+            data = ProcessingData.read(inFileName);
         }
 
-    }
-
-    public static void main(String[] args) {
-        start(args);
+        AlgorithmFactory.startProgram(alg, mod, key, data, outFileName);
     }
 }
