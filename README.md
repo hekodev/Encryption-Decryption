@@ -19,6 +19,7 @@ java Main -mode enc -in road_to_treasure.txt -out protected.txt -key 5 -alg shif
 java Main -key 5 -alg unicode -data "\jqhtrj%yt%m~ujwxpnqq&" -mode dec
 
 with the arguments ...
+
 -mode : determine the program’s mode (enc - encryption, dec - decryption) 
 
 -in/out : to specify the full name of a file to read data and to write the result
